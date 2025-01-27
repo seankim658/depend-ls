@@ -1,5 +1,7 @@
 package core
 
+import sitter "github.com/smacker/go-tree-sitter"
+
 // Represents the specific location in code where an entity is used or defined.
 type Reference struct {
 	Line   uint32
@@ -20,4 +22,10 @@ type Dependency struct {
 	UsesTypes map[string][]Reference
 	// Constants referenced by this entity
 	Constants map[string][]Reference
+}
+
+// For internal use.
+type functionInfo struct {
+	*Dependency
+	bodyNode *sitter.Node
 }

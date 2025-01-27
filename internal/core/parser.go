@@ -1,23 +1,22 @@
-package main
+package core
 
 import (
 	"context"
 	"fmt"
-	lang "github.com/seankim658/depend-ls/internal/core"
+	"github.com/seankim658/depend-ls/internal/languages"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
 // Handles the tree-sitter parsing of source code.
 type Parser struct {
 	parser   *sitter.Parser
-	language lang.Language
+	language languages.Language
 }
 
 // Creates a new Parser instance for the specified language.
-func NewParser(lang lang.Language) *Parser {
+func NewParser(lang languages.Language) *Parser {
 	parser := sitter.NewParser()
 	parser.SetLanguage(lang.GetTreeSitterLanguage())
-
 	return &Parser{parser: parser, language: lang}
 }
 
@@ -34,12 +33,12 @@ func (p *Parser) ParseFile(content []byte) ([]*Dependency, error) {
 	//// Function Calls
 
 	// First find all functions and their corresponding body nodes
-	functions, err := p.parseFunctions(content, tree.RootNode(), queries.FunctionDefinition)
+	functionInfos, err := p.parseFunctions(content, tree.RootNode(), queries.FunctionDefinition)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing functions: %w", err)
 	}
 	// Then find all function calls within each function
-	for _, fn := range functions {
+	for _, fn := range functionInfos {
 		calls, err := p.findFunctionCalls(content, fn.bodyNode, queries.FunctionCalls)
 		if err != nil {
 			return nil, fmt.Errorf("error finding function calls: %w", err)
@@ -47,18 +46,23 @@ func (p *Parser) ParseFile(content []byte) ([]*Dependency, error) {
 		fn.Calls = calls
 	}
 
-	return functions, nil
+	dependencies := make([]*Dependency, len(functionInfos))
+	for i, info := range functionInfos {
+		dependencies[i] = info.Dependency
+	}
+
+	return dependencies, nil
 }
 
 // Analyzes the content and returns the found dependencies.
-func (p *Parser) parseFunctions(content []byte, root *sitter.Node, query string) ([]*Dependency, error) {
+func (p *Parser) parseFunctions(content []byte, root *sitter.Node, query string) ([]*functionInfo, error) {
 	q, err := sitter.NewQuery([]byte(query), p.language.GetTreeSitterLanguage())
 	if err != nil {
 		return nil, fmt.Errorf("function query error: %w", err)
 	}
 	defer q.Close()
 
-	var functions []*Dependency
+	var functions []*functionInfo
 	qc := sitter.NewQueryCursor()
 	qc.Exec(q, root)
 
@@ -81,14 +85,17 @@ func (p *Parser) parseFunctions(content []byte, root *sitter.Node, query string)
 		}
 
 		if fnName != "" && bodyNode != nil {
-			fn := &Dependency{
+			dep := &Dependency{
 				Name:      fnName,
 				Type:      "function",
 				Line:      bodyNode.StartPoint().Row + 1,
 				Calls:     make(map[string][]Reference),
 				UsesTypes: make(map[string][]Reference),
 				Constants: make(map[string][]Reference),
-				bodyNode:  bodyNode,
+			}
+			fn := &functionInfo{
+				Dependency: dep,
+				bodyNode:   bodyNode,
 			}
 			functions = append(functions, fn)
 		}

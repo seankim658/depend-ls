@@ -3,10 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	lang "github.com/seankim658/depend-ls/internal/languages"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/seankim658/depend-ls/internal/core"
+	"github.com/seankim658/depend-ls/internal/languages"
+	"github.com/seankim658/depend-ls/internal/output"
 )
 
 func main() {
@@ -23,35 +26,25 @@ func main() {
 	}
 
 	ext := filepath.Ext(*filePath)
-	var language lang.Language
+	var language languages.Language
 	switch ext {
 	case ".py":
-		language = lang.NewPythonLanguage()
+		language = languages.NewPythonLanguage()
 	default:
 		log.Fatalf("Unsupported file type: %s", ext)
 	}
 
-	parser := NewParser(language)
+	parser := core.NewParser(language)
 	deps, err := parser.ParseFile(content)
 	if err != nil {
 		log.Fatalf("Error analyzing file: %v", err)
 	}
 
-	writeDependencies(deps)
-}
-
-func writeDependencies(deps []*Dependency) {
-	for _, dep := range deps {
-		fmt.Printf("## %s: %s (line %d)\n", dep.Type, dep.Name, dep.Line)
-
-		if len(dep.Calls) > 0 {
-			fmt.Println("Calls:")
-			for name, refs := range dep.Calls {
-				for _, ref := range refs {
-					fmt.Printf("- %s\n  - Used at line %d\n", name, ref.Line)
-				}
-			}
-		}
-		fmt.Println()
+	formatter := output.NewMarkdownFormatter()
+	result, err := formatter.Format(deps)
+	if err != nil {
+		log.Fatalf("Error formatting output: %v", err)
 	}
+
+	fmt.Print(result)
 }
