@@ -1,7 +1,7 @@
 package main
 
 import (
-	lang "depend-ls/languages"
+	lang "github.com/seankim658/depend-ls/languages"
 	"flag"
 	"fmt"
 	"log"

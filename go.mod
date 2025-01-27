@@ -1,4 +1,4 @@
-module depend-ls
+module github.com/seankim658/depend-ls
 
 go 1.23.4
 
