@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	lang "github.com/seankim658/depend-ls/languages"
 	"fmt"
+	lang "github.com/seankim658/depend-ls/internal/core"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 

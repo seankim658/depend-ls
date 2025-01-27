@@ -1,9 +1,9 @@
 package main
 
 import (
-	lang "github.com/seankim658/depend-ls/languages"
 	"flag"
 	"fmt"
+	lang "github.com/seankim658/depend-ls/internal/languages"
 	"log"
 	"os"
 	"path/filepath"
@@ -31,11 +31,8 @@ func main() {
 		log.Fatalf("Unsupported file type: %s", ext)
 	}
 
-
 	parser := NewParser(language)
-	analyzer := NewAnalyzer(parser)
-
-	deps, err := analyzer.AnalyzeFile(content)
+	deps, err := parser.ParseFile(content)
 	if err != nil {
 		log.Fatalf("Error analyzing file: %v", err)
 	}
